@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#18734e"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png">
+<title>Simpan Emas</title>
+<style>
+:root{--green:#18734e;--green2:#239566;--ink:#142b4f;--muted:#697991;--line:#d9e5ef;--bg:#f4f7fa;--photo:#7898b3}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:18px clamp(16px,3vw,40px);display:flex;align-items:center;gap:18px;justify-content:space-between;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}.logo{font-size:32px}.brand h1{margin:0;color:var(--green);font-size:23px}.brand p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.search{width:min(380px,75vw);padding:12px 14px;border:1px solid var(--line);border-radius:9px;font-size:14px}
+button{border:0;border-radius:9px;padding:12px 16px;font-weight:700;cursor:pointer}.primary{background:var(--green2);color:#fff}.secondary{background:#e9f1f7;color:var(--ink)}.danger{background:#fae9e7;color:#a52e29}
+main{max-width:1450px;margin:auto;padding:28px clamp(16px,2vw,32px)}.intro{display:flex;align-items:center;gap:14px;margin:0 0 22px}.intro .symbol{font-size:28px}.intro h2{font-size:23px;margin:0 0 7px}.intro p{margin:0;color:var(--muted);font-size:14px}
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:20px}.stat{background:white;border:1px solid var(--line);border-radius:12px;padding:17px 20px}.stat span{display:block;color:var(--muted);font-size:13px;margin-bottom:8px}.stat strong{font-size:22px;color:var(--green)}
+.list{display:grid;gap:14px}.gold-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:17px;display:grid;grid-template-columns:minmax(180px,28%) minmax(300px, min(54%,665px)) 1fr;gap:24px;align-items:start}
+.photo{width:100%;height:230px;background:var(--photo);border-radius:7px;display:flex;align-items:center;justify-content:center;overflow:hidden;color:#edf5fb;text-align:center;position:relative}.photo img{width:100%;height:100%;object-fit:cover}.photo .placeholder{font-size:15px}.photo .placeholder span{display:block;font-size:48px;margin-bottom:10px;opacity:.9}
+.details{width:100%;border:1px dashed #c9d8e5;border-radius:4px;border-collapse:collapse;font-size:14px}.details td{padding:17px 15px;border:1px dashed #c9d8e5;height:49px}.details td:first-child{font-weight:700;width:46%;white-space:nowrap}.details td:last-child{overflow-wrap:anywhere}
+.card-side{display:flex;flex-direction:column;gap:8px;align-items:flex-end}.barcode{font-size:12px;color:var(--muted);overflow-wrap:anywhere;text-align:right}.card-buttons{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.empty{background:#fff;border:1px dashed var(--line);padding:45px 20px;text-align:center;border-radius:12px;color:var(--muted)}
+footer{border-top:1px solid var(--line);padding:16px 32px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#78879b;font-size:12px;background:#fff}
+dialog{border:0;border-radius:14px;padding:0;width:min(560px,calc(100% - 24px));box-shadow:0 20px 70px #12213b40}dialog::backdrop{background:#101d2c88}.modal-head{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.modal-head h3{margin:0}.modal-body{padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:13px;font-weight:700}.field input{width:100%;padding:11px;border:1px solid #ccd9e5;border-radius:8px;font-size:14px}.modal-actions{padding:0 22px 22px;display:flex;justify-content:flex-end;gap:9px}
+@media(max-width:850px){.gold-card{grid-template-columns: minmax(130px,38%) 1fr;gap:14px}.photo{height:190px}.card-side{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between}.details td{padding:12px 9px;font-size:12px}.details td:first-child{white-space:normal}.summary{grid-template-columns:1fr}.stat{padding:13px 16px}}
+@media(max-width:520px){.gold-card{grid-template-columns:1fr}.photo{height:230px}.card-side{grid-column:auto}.brand h1{font-size:20px}.intro h2{font-size:20px}.modal-body{grid-template-columns:1fr}.field.full{grid-column:auto}.search{width:100%}.actions{width:100%}.actions button{flex:1}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo">🪙</div><div><h1>SIMPAN EMAS</h1><p>Kelola Tabungan Emas Anda</p></div></div>
+  <div class="actions"><input id="search" class="search" placeholder="⌕  Cari barcode, berat, atau tanggal..."><button class="primary" id="addBtn">＋ Tambah Emas</button></div>
+</header>
+<main>
+  <div class="intro"><div class="symbol">▤</div><div><h2>Daftar Penyimpanan Emas</h2><p>Kelola dan pantau koleksi emas Anda dengan mudah.</p></div></div>
+  <section class="summary">
+    <div class="stat"><span>Jumlah keping / barang</span><strong id="count">0</strong></div>
+    <div class="stat"><span>Total berat emas</span><strong id="weight">0 gram</strong></div>
+    <div class="stat"><span>Total modal pembelian</span><strong id="capital">Rp0</strong></div>
+  </section>
+  <section id="list" class="list"></section>
+</main>
+<footer><span><b>SIMPAN EMAS</b>　•　Investasi kecil, masa depan besar</span><span>🛡 Data tersimpan di browser perangkat ini</span></footer>
+<dialog id="editor">
+  <div class="modal-head"><h3 id="formTitle">Tambah data emas</h3><button class="secondary" id="closeBtn" aria-label="Tutup">✕</button></div>
+  <form id="goldForm">
+    <div class="modal-body">
+      <div class="field full"><label for="photo">Foto emas</label><input id="photo" type="file" accept="image/*"></div>
+      <div class="field full"><label for="barcode">Barcode emas *</label><input id="barcode" required placeholder="Contoh: EM-00001"></div>
+      <div class="field"><label for="weightInput">Berat (gram) *</label><input id="weightInput" required type="number" min="0.0001" step="0.0001" placeholder="0.00"></div>
+      <div class="field"><label for="priceInput">Harga beli (Rp) *</label><input id="priceInput" required type="number" min="0" step="1" placeholder="0"></div>
+      <div class="field full"><label for="dateInput">Tanggal beli *</label><input id="dateInput" required type="date"></div>
+    </div>
+    <div class="modal-actions"><button type="button" class="secondary" id="cancelBtn">Batal</button><button type="submit" class="primary">Simpan emas</button></div>
+  </form>
+</dialog>
+<script>
+const KEY='simpanEmasDataV1';
+let items=[];
+let editingId=null;
+let selectedPhoto='';
+const $=id=>document.getElementById(id);
+const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
+function load(){try{items=JSON.parse(localStorage.getItem(KEY)||'[]')}catch{items=[]}render()}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(items));return true}catch(e){alert('Penyimpanan penuh. Coba gunakan foto yang lebih kecil.');return false}}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+ const q=$('search').value.trim().toLowerCase();
+ const filtered=items.filter(x=>[x.barcode,x.weight,x.price,x.date].some(v=>String(v).toLowerCase().includes(q)));
+ $('count').textContent=items.length;
+ $('weight').textContent=items.reduce((s,x)=>s+Number(x.weight||0),0).toLocaleString('id-ID',{maximumFractionDigits:4})+' gram';
+ $('capital').textContent=rupiah(items.reduce((s,x)=>s+Number(x.price||0),0));
+ $('list').innerHTML=filtered.length?filtered.map(x=>`
+ <article class="gold-card">
+  <div class="photo">${x.photo?`<img src="${x.photo}" alt="Foto emas ${escapeHtml(x.barcode)}">`:`<div class="placeholder"><span>▧</span>Foto emas</div>`}</div>
+  <table class="details"><tbody>
+   <tr><td>BARCODE EMAS</td><td>${escapeHtml(x.barcode)}</td></tr>
+   <tr><td>BERAT (GRAM)</td><td>${Number(x.weight).toLocaleString('id-ID',{maximumFractionDigits:4})} gram</td></tr>
+   <tr><td>HARGA BELI</td><td>${rupiah(x.price)}</td></tr>
+   <tr><td>TGL BELI</td><td>${escapeHtml(x.date)}</td></tr>
+  </tbody></table>
+  <div class="card-side"><div class="barcode">ID: ${escapeHtml(x.id)}</div><div class="card-buttons"><button class="secondary" onclick="editItem('${x.id}')">✎ Edit</button><button class="danger" onclick="deleteItem('${x.id}')">Hapus</button></div></div>
+ </article>`).join(''):`<div class="empty">${q?'Data emas tidak ditemukan.':'Belum ada data emas. Klik “＋ Tambah Emas” untuk mulai mencatat.'}</div>`;
+}
+function openNew(){
+ editingId=null;selectedPhoto='';$('goldForm').reset();$('formTitle').textContent='Tambah data emas';$('dateInput').value=new Date().toISOString().slice(0,10);$('editor').showModal();
+}
+function editItem(id){
+ const x=items.find(a=>a.id===id);if(!x)return;
+ editingId=id;selectedPhoto=x.photo||'';$('goldForm').reset();$('formTitle').textContent='Edit data emas';
+ $('barcode').value=x.barcode;$('weightInput').value=x.weight;$('priceInput').value=x.price;$('dateInput').value=x.date;$('photo').value='';$('editor').showModal();
+}
+function deleteItem(id){const x=items.find(a=>a.id===id);if(x&&confirm('Hapus data emas '+x.barcode+'?')){items=items.filter(a=>a.id!==id);persist();render()}}
+$('photo').addEventListener('change',e=>{
+ const file=e.target.files[0];if(!file)return;
+ if(!file.type.startsWith('image/')){alert('Pilih file gambar.');return}
+ if(file.size>4*1024*1024){alert('Ukuran foto maksimal 4 MB.');e.target.value='';return}
+ const reader=new FileReader();reader.onload=()=>{selectedPhoto=reader.result};reader.readAsDataURL(file);
+});
+$('goldForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ const barcode=$('barcode').value.trim(),weight=Number($('weightInput').value),price=Number($('priceInput').value),date=$('dateInput').value;
+ if(!barcode||weight<=0||price<0||!date){alert('Periksa kembali data yang diisi.');return}
+ if(items.some(x=>x.barcode.toLowerCase()===barcode.toLowerCase()&&x.id!==editingId)){alert('Barcode tersebut sudah digunakan.');return}
+ const old=items.find(x=>x.id===editingId);
+ const record={id:editingId||('EM-'+Date.now().toString(36).toUpperCase()),barcode,weight,price,date,photo:selectedPhoto||old?.photo||''};
+ if(editingId)items=items.map(x=>x.id===editingId?record:x);else items.unshift(record);
+ if(persist()){$('editor').close();render()}
+});
+$('addBtn').addEventListener('click',openNew);$('closeBtn').addEventListener('click',()=>$('editor').close());$('cancelBtn').addEventListener('click',()=>$('editor').close());$('search').addEventListener('input',render);
+load();
+</script>
+<script>if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("./sw.js").catch(()=>{});}</script></body>
+</html>
