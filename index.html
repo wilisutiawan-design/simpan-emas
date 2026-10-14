@@ -92,7 +92,7 @@ function deleteItem(id){const x=items.find(a=>a.id===id);if(x&&confirm('Hapus da
 $('photo').addEventListener('change',e=>{
  const file=e.target.files[0];if(!file)return;
  if(!file.type.startsWith('image/')){alert('Pilih file gambar.');return}
- if(file.size>4*1024*1024){alert('Ukuran foto maksimal 4 MB.');e.target.value='';return}
+ if(file.size>4*1024*1024){alert('Ukuran foto maksimal 10 MB.');e.target.value='';return}
  const reader=new FileReader();reader.onload=()=>{selectedPhoto=reader.result};reader.readAsDataURL(file);
 });
 $('goldForm').addEventListener('submit',e=>{
