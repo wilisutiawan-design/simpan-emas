@@ -43,7 +43,8 @@ dialog{border:0;border-radius:14px;padding:0;width:min(560px,calc(100% - 24px));
   <div class="modal-head"><h3 id="formTitle">Tambah data emas</h3><button class="secondary" id="closeBtn" aria-label="Tutup">✕</button></div>
   <form id="goldForm">
     <div class="modal-body">
-      <div class="field full"><label for="photo">Foto emas</label><input id="photo" type="file" accept="image/*"></div>
+      <div class="field full"><label for="photo">Foto emas Depan</label><input id="photo" type="file" accept="image/*"></div>
+      <div class="field full"><label for="photo">Foto emas Belakang</label><input id="photo" type="file" accept="image/*"></div>
       <div class="field full"><label for="barcode">Barcode emas *</label><input id="barcode" required placeholder="Contoh: EM-00001"></div>
       <div class="field"><label for="weightInput">Berat (gram) *</label><input id="weightInput" required type="number" min="0.0001" step="0.0001" placeholder="0.00"></div>
       <div class="field"><label for="priceInput">Harga beli (Rp) *</label><input id="priceInput" required type="number" min="0" step="1" placeholder="0"></div>
