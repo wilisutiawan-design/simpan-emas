@@ -43,7 +43,7 @@ dialog{border:0;border-radius:14px;padding:0;width:min(560px,calc(100% - 24px));
   <div class="modal-head"><h3 id="formTitle">Tambah data emas</h3><button class="secondary" id="closeBtn" aria-label="Tutup">✕</button></div>
   <form id="goldForm">
     <div class="modal-body">
-      <div class="field full"><label for="photo">Foto emas Depan</label><input id="photo" type="file" accept="image/*"></div>
+      <div class="field full"><label for="photo">Foto emas</label><input id="photo" type="file" accept="image/*"></div>
       <div class="field full"><label for="barcode">Barcode emas *</label><input id="barcode" required placeholder="Contoh: EM-00001"></div>
       <div class="field"><label for="weightInput">Berat (gram) *</label><input id="weightInput" required type="number" min="0.0001" step="0.0001" placeholder="0.00"></div>
       <div class="field"><label for="priceInput">Harga beli (Rp) *</label><input id="priceInput" required type="number" min="0" step="1" placeholder="0"></div>
@@ -53,14 +53,17 @@ dialog{border:0;border-radius:14px;padding:0;width:min(560px,calc(100% - 24px));
   </form>
 </dialog>
 <script>
-const KEY='simpanEmasDataV1';
-let items=[];
-let editingId=null;
-let selectedPhoto='';
+const KEY='simpanEmasDataV2';
+const DB_NAME='SimpanEmasDB', STORE='items';
+let items=[]; let editingId=null; let selectedPhoto=''; let db;
 const $=id=>document.getElementById(id);
 const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
-function load(){try{items=JSON.parse(localStorage.getItem(KEY)||'[]')}catch{items=[]}render()}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(items));return true}catch(e){alert('Penyimpanan penuh. Coba gunakan foto yang lebih kecil.');return false}}
+function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+function getAll(){return new Promise((resolve,reject)=>{const req=db.transaction(STORE,'readonly').objectStore(STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});}
+function putItem(item){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(item);tx.oncomplete=()=>resolve(true);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}
+function removeItem(id){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);tx.oncomplete=()=>resolve(true);tx.onerror=()=>reject(tx.error);});}
+async function load(){try{db=await openDB();items=await getAll();if(items.length===0){try{const old=JSON.parse(localStorage.getItem('simpanEmasDataV1')||'[]');for(const record of old){await putItem(record);}items=await getAll();}catch(migrationError){console.warn('Migrasi data lama tidak berhasil',migrationError);}}render();}catch(e){alert('Penyimpanan browser tidak dapat dibuka. Coba gunakan Chrome terbaru.');}}
+async function persist(record){try{await putItem(record);items=await getAll();return true;}catch(e){alert('Data belum tersimpan. Pastikan ruang penyimpanan HP tersedia, lalu coba lagi.');return false;}}
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function render(){
  const q=$('search').value.trim().toLowerCase();
@@ -68,43 +71,14 @@ function render(){
  $('count').textContent=items.length;
  $('weight').textContent=items.reduce((s,x)=>s+Number(x.weight||0),0).toLocaleString('id-ID',{maximumFractionDigits:4})+' gram';
  $('capital').textContent=rupiah(items.reduce((s,x)=>s+Number(x.price||0),0));
- $('list').innerHTML=filtered.length?filtered.map(x=>`
- <article class="gold-card">
-  <div class="photo">${x.photo?`<img src="${x.photo}" alt="Foto emas ${escapeHtml(x.barcode)}">`:`<div class="placeholder"><span>▧</span>Foto emas</div>`}</div>
-  <table class="details"><tbody>
-   <tr><td>BARCODE EMAS</td><td>${escapeHtml(x.barcode)}</td></tr>
-   <tr><td>BERAT (GRAM)</td><td>${Number(x.weight).toLocaleString('id-ID',{maximumFractionDigits:4})} gram</td></tr>
-   <tr><td>HARGA BELI</td><td>${rupiah(x.price)}</td></tr>
-   <tr><td>TGL BELI</td><td>${escapeHtml(x.date)}</td></tr>
-  </tbody></table>
-  <div class="card-side"><div class="barcode">ID: ${escapeHtml(x.id)}</div><div class="card-buttons"><button class="secondary" onclick="editItem('${x.id}')">✎ Edit</button><button class="danger" onclick="deleteItem('${x.id}')">Hapus</button></div></div>
- </article>`).join(''):`<div class="empty">${q?'Data emas tidak ditemukan.':'Belum ada data emas. Klik “＋ Tambah Emas” untuk mulai mencatat.'}</div>`;
+ $('list').innerHTML=filtered.length?filtered.map(x=>`<article class="gold-card"><div class="photo">${x.photo?`<img src="${x.photo}" alt="Foto emas ${escapeHtml(x.barcode)}">`:`<div class="placeholder"><span>▧</span>Foto emas</div>`}</div><table class="details"><tbody><tr><td>BARCODE EMAS</td><td>${escapeHtml(x.barcode)}</td></tr><tr><td>BERAT (GRAM)</td><td>${Number(x.weight).toLocaleString('id-ID',{maximumFractionDigits:4})} gram</td></tr><tr><td>HARGA BELI</td><td>${rupiah(x.price)}</td></tr><tr><td>TGL BELI</td><td>${escapeHtml(x.date)}</td></tr></tbody></table><div class="card-side"><div class="barcode">ID: ${escapeHtml(x.id)}</div><div class="card-buttons"><button class="secondary" onclick="editItem('${x.id}')">✎ Edit</button><button class="danger" onclick="deleteItem('${x.id}')">Hapus</button></div></div></article>`).join(''):`<div class="empty">${q?'Data emas tidak ditemukan.':'Belum ada data emas. Klik “＋ Tambah Emas” untuk mulai mencatat.'}</div>`;
 }
-function openNew(){
- editingId=null;selectedPhoto='';$('goldForm').reset();$('formTitle').textContent='Tambah data emas';$('dateInput').value=new Date().toISOString().slice(0,10);$('editor').showModal();
-}
-function editItem(id){
- const x=items.find(a=>a.id===id);if(!x)return;
- editingId=id;selectedPhoto=x.photo||'';$('goldForm').reset();$('formTitle').textContent='Edit data emas';
- $('barcode').value=x.barcode;$('weightInput').value=x.weight;$('priceInput').value=x.price;$('dateInput').value=x.date;$('photo').value='';$('editor').showModal();
-}
-function deleteItem(id){const x=items.find(a=>a.id===id);if(x&&confirm('Hapus data emas '+x.barcode+'?')){items=items.filter(a=>a.id!==id);persist();render()}}
-$('photo').addEventListener('change',e=>{
- const file=e.target.files[0];if(!file)return;
- if(!file.type.startsWith('image/')){alert('Pilih file gambar.');return}
- if(file.size>4*1024*1024){alert('Ukuran foto maksimal 10 MB.');e.target.value='';return}
- const reader=new FileReader();reader.onload=()=>{selectedPhoto=reader.result};reader.readAsDataURL(file);
-});
-$('goldForm').addEventListener('submit',e=>{
- e.preventDefault();
- const barcode=$('barcode').value.trim(),weight=Number($('weightInput').value),price=Number($('priceInput').value),date=$('dateInput').value;
- if(!barcode||weight<=0||price<0||!date){alert('Periksa kembali data yang diisi.');return}
- if(items.some(x=>x.barcode.toLowerCase()===barcode.toLowerCase()&&x.id!==editingId)){alert('Barcode tersebut sudah digunakan.');return}
- const old=items.find(x=>x.id===editingId);
- const record={id:editingId||('EM-'+Date.now().toString(36).toUpperCase()),barcode,weight,price,date,photo:selectedPhoto||old?.photo||''};
- if(editingId)items=items.map(x=>x.id===editingId?record:x);else items.unshift(record);
- if(persist()){$('editor').close();render()}
-});
+function openNew(){editingId=null;selectedPhoto='';$('goldForm').reset();$('formTitle').textContent='Tambah data emas';$('dateInput').value=new Date().toISOString().slice(0,10);$('editor').showModal();}
+function editItem(id){const x=items.find(a=>a.id===id);if(!x)return;editingId=id;selectedPhoto=x.photo||'';$('goldForm').reset();$('formTitle').textContent='Edit data emas';$('barcode').value=x.barcode;$('weightInput').value=x.weight;$('priceInput').value=x.price;$('dateInput').value=x.date;$('photo').value='';$('editor').showModal();}
+async function deleteItem(id){const x=items.find(a=>a.id===id);if(x&&confirm('Hapus data emas '+x.barcode+'?')){try{await removeItem(id);items=await getAll();render();}catch(e){alert('Data belum berhasil dihapus.');}}}
+function compressPhoto(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const img=new Image();img.onerror=reject;img.onload=()=>{const max=900,scale=Math.min(1,max/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.72));};img.src=reader.result;};reader.readAsDataURL(file);});}
+$('photo').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')){alert('Pilih file gambar.');e.target.value='';return;}try{selectedPhoto=await compressPhoto(file);}catch(err){alert('Foto tidak bisa diproses. Coba pilih foto lain.');selectedPhoto='';}});
+$('goldForm').addEventListener('submit',async e=>{e.preventDefault();const barcode=$('barcode').value.trim(),weight=Number($('weightInput').value),price=Number($('priceInput').value),date=$('dateInput').value;if(!barcode||weight<=0||price<0||!date){alert('Periksa kembali data yang diisi.');return;}if(items.some(x=>x.barcode.toLowerCase()===barcode.toLowerCase()&&x.id!==editingId)){alert('Barcode tersebut sudah digunakan.');return;}const old=items.find(x=>x.id===editingId);const record={id:editingId||('EM-'+Date.now().toString(36).toUpperCase()),barcode,weight,price,date,photo:selectedPhoto||old?.photo||''};if(await persist(record)){$('editor').close();render();}});
 $('addBtn').addEventListener('click',openNew);$('closeBtn').addEventListener('click',()=>$('editor').close());$('cancelBtn').addEventListener('click',()=>$('editor').close());$('search').addEventListener('input',render);
 load();
 </script>
